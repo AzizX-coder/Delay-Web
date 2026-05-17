@@ -1,12 +1,27 @@
 import { useMemo } from "react";
+import DOMPurify from "dompurify";
 
 interface MarkdownRendererProps {
   content: string;
   className?: string;
 }
 
+/**
+ * Renders Markdown as HTML. `renderMarkdown` already escapes inline text,
+ * but Markdown that comes from AI / shared notes / a chat partner can
+ * include raw HTML in unexpected places. We pass the result through
+ * DOMPurify so even a clever payload can't smuggle <script>, <iframe>,
+ * or onerror attributes into the page.
+ */
 export function MarkdownRenderer({ content, className = "" }: MarkdownRendererProps) {
-  const html = useMemo(() => renderMarkdown(content), [content]);
+  const html = useMemo(() => {
+    const raw = renderMarkdown(content);
+    return DOMPurify.sanitize(raw, {
+      USE_PROFILES: { html: true },
+      FORBID_TAGS: ["style", "form", "input", "textarea", "button", "iframe", "object", "embed", "script"],
+      FORBID_ATTR: ["onerror", "onload", "onclick", "onmouseover", "onfocus", "style"],
+    });
+  }, [content]);
 
   return (
     <div

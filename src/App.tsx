@@ -122,6 +122,13 @@ export default function App() {
     async function init() {
       await initSettings();
       await initTheme();
+      // Pre-load stores whose page might not be visited but whose data
+      // we still need warm (Quick Capture modal writes to captureStore, the
+      // command palette searches its items, etc.). Without this, opening
+      // QuickCapture before ever visiting the Saved page silently writes
+      // into an empty in-memory list and the user thinks Saved is broken.
+      try { (await import("@/stores/captureStore")).useCaptureStore.getState().loadItems(); } catch {}
+      try { (await import("@/stores/flowsStore")).useFlowsStore.getState().loadFlows(); } catch {}
       setReady(true);
       const timer = setTimeout(() => setShowSplash(false), 600);
       return () => clearTimeout(timer);
